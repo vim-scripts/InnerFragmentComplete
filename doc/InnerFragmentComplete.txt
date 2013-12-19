@@ -1,0 +1,128 @@
+*InnerFragmentComplete.txt*	Insert mode completion based on fragments inside words.
+
+		  INNER FRAGMENT COMPLETE    by Ingo Karkat
+						   *InnerFragmentComplete.vim*
+description			|InnerFragmentComplete-description|
+usage				|InnerFragmentComplete-usage|
+installation			|InnerFragmentComplete-installation|
+configuration			|InnerFragmentComplete-configuration|
+limitations			|InnerFragmentComplete-limitations|
+known problems			|InnerFragmentComplete-known-problems|
+todo				|InnerFragmentComplete-todo|
+history				|InnerFragmentComplete-history|
+
+==============================================================================
+DESCRIPTION				   *InnerFragmentComplete-description*
+
+The built-in insert mode completion |i_CTRL-N| searches for entire keywords.
+Often, variable names share many identical fragments, but if you want to
+complete from fragments inside of variables (e.g. "KeyValue" from
+"SpecialKeyValue"), it won't work, because the usual completions only offer
+whole keyword matches.
+
+SEE ALSO								     *
+
+- The anchoring to individual fragment characters is re-used from
+  CamelCaseComplete (vimscript #3915), but applied here only to fragments
+  inside CamelCaseWords or underscore_words, not whole words.
+- BidiComplete (vimscript #4658) can complete inner (or leftmost) fragments
+  when there's already a completion base after the cursor.
+- Check out the |CompleteHelper.vim| plugin page (vimscript #3914) for a full
+  list of insert mode completions powered by it.
+
+==============================================================================
+USAGE						 *InnerFragmentComplete-usage*
+
+In insert mode, invoke the inner fragment completion via CTRL-X i
+You can then search forward and backward via CTRL-N / CTRL-P, as usual.
+								  *i_CTRL-X_i*
+CTRL-X i		Find matches for inner fragments. It first searches
+			inside CamelCaseWords and underscore_words, either for
+			matches of the keyword characters before the cursor at
+			the inner fragment start, or for fragments whose
+			individual words begin with the typed letters in front
+			of the cursor. (The latter requires the optional
+			|CamelCaseComplete.vim| plugin, and then works like
+			with the strict |i_CTRL-X_CTRL-C| completion.)
+			The completion base starts with the first uppercase
+			character before the cursor (so "myCust" would find
+			fragments starting with "Cust", e.g. in
+			"SpecialCustomer"), or the keywords (excluding the
+			underscore character, to be able to trigger completion
+			inside an underscore_word) before the cursor. If the
+			first keyword character is lowercase, the inner
+			CamelCase matches will be converted to start
+			lowercase, too.
+
+			If that doesn't find any matches, a fallback search
+			will pick up base matches anywhere inside a word (e.g.
+			"comp" will match "compress" inside "decompress").
+
+EXAMPLE					       *InnerFragmentComplete-example*
+
+The text contains "CamelCaseWords". To write "PascalCaseWords", start either
+with "PascalCaseW" (unique text match), "PascalC" (several text matches), or
+"PascalCW" (unique fragment match).
+
+==============================================================================
+INSTALLATION				  *InnerFragmentComplete-installation*
+
+This script is packaged as a |vimball|. If you have the "gunzip" decompressor
+in your PATH, simply edit the *.vmb.gz package in Vim; otherwise, decompress
+the archive first, e.g. using WinZip. Inside Vim, install by sourcing the
+vimball or via the |:UseVimball| command. >
+    vim InnerFragmentComplete*.vmb.gz
+    :so %
+To uninstall, use the |:RmVimball| command.
+
+DEPENDENCIES				  *InnerFragmentComplete-dependencies*
+
+- Requires Vim 7.0 or higher.
+- Requires the |CompleteHelper.vim| (vimscript #3914) plugin, version 1.32 or
+  higher.
+- |CamelCaseComplete.vim| (vimscript #3915) plugin, version 1.01 or higher
+  (optional).
+
+==============================================================================
+CONFIGURATION				 *InnerFragmentComplete-configuration*
+
+For a permanent configuration, put the following commands into your |vimrc|:
+
+	 *b:InnerFragmentComplete_complete* *g:InnerFragmentComplete_complete*
+Analoguous to the 'complete' option, you can specify which buffers will be
+scanned for completion candidates. Currently, '.' (current buffer), 'w'
+(buffers from other windows), and 'b' (other listed buffers) are supported. >
+    let g:InnerFragmentComplete_complete = '.,w,b'
+The global setting can be overridden for a particular buffer
+(b:InnerFragmentComplete_complete).
+						 *InnerFragmentComplete-remap*
+If you want to use a different mapping, map your keys to the
+<Plug>(InnerFragmentComplete) mapping target _before_ sourcing the script
+(e.g. in your |vimrc|): >
+    imap <C-x>i  <Plug>(InnerFragmentComplete)
+<
+==============================================================================
+LIMITATIONS				   *InnerFragmentComplete-limitations*
+
+KNOWN PROBLEMS				*InnerFragmentComplete-known-problems*
+
+TODO						  *InnerFragmentComplete-todo*
+
+IDEAS						 *InnerFragmentComplete-ideas*
+
+==============================================================================
+HISTORY					       *InnerFragmentComplete-history*
+
+1.00	19-Dec-2013
+First published version.
+
+0.01	01-Oct-2013
+Started development.
+
+==============================================================================
+Copyright: (C) 2013 Ingo Karkat
+The VIM LICENSE applies to this plugin; see |copyright|.
+
+Maintainer:	Ingo Karkat <ingo@karkat.de>
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:

@@ -1,0 +1,48 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=4804
+
+DESCRIPTION
+The built-in insert mode completion i_CTRL-N searches for entire keywords.
+Often, variable names share many identical fragments, but if you want to
+complete from fragments inside of variables (e.g. "KeyValue" from
+"SpecialKeyValue"), it won't work, because the usual completions only offer
+whole keyword matches.
+
+SEE ALSO
+- The anchoring to individual fragment characters is re-used from
+  CamelCaseComplete (vimscript #3915), but applied here only to fragments
+  inside CamelCaseWords or underscore_words, not whole words.
+- BidiComplete (vimscript #4658) can complete inner (or leftmost) fragments
+  when there's already a completion base after the cursor.
+- Check out the CompleteHelper.vim plugin page (vimscript #3914) for a full
+  list of insert mode completions powered by it.
+
+USAGE
+In insert mode, invoke the inner fragment completion via CTRL-X i
+You can then search forward and backward via CTRL-N / CTRL-P, as usual.
+
+CTRL-X i                Find matches for inner fragments. It first searches
+                        inside CamelCaseWords and underscore_words, either for
+                        matches of the keyword characters before the cursor at
+                        the inner fragment start, or for fragments whose
+                        individual words begin with the typed letters in front
+                        of the cursor. (The latter requires the optional
+                        CamelCaseComplete.vim plugin, and then works like
+                        with the strict i_CTRL-X_CTRL-C completion.)
+                        The completion base starts with the first uppercase
+                        character before the cursor (so "myCust" would find
+                        fragments starting with "Cust", e.g. in
+                        "SpecialCustomer"), or the keywords (excluding the
+                        underscore character, to be able to trigger completion
+                        inside an underscore_word) before the cursor. If the
+                        first keyword character is lowercase, the inner
+                        CamelCase matches will be converted to start
+                        lowercase, too.
+
+                        If that doesn't find any matches, a fallback search
+                        will pick up base matches anywhere inside a word (e.g.
+                        "comp" will match "compress" inside "decompress").
+
+EXAMPLE
+The text contains "CamelCaseWords". To write "PascalCaseWords", start either
+with "PascalCaseW" (unique text match), "PascalC" (several text matches), or
+"PascalCW" (unique fragment match).
