@@ -5,12 +5,24 @@
 "   - Complete/Repeat.vim autoload script
 "   - CamelCaseComplete plugin (optional)
 "
-" Copyright: (C) 2013 Ingo Karkat
+" Copyright: (C) 2013-2014 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"   1.10.005	04-Apr-2014	ENH: Also match from the start of a
+"				CamelCaseWord without a base prefix. But then,
+"				there must be additional (unmatched) fragments
+"				after the match to avoid overlap with the
+"				CamelCaseComplete completion.
+"   1.10.004	02-Apr-2014	ENH: When the completion base is prefixed by a
+"				fragment (e.g. "my" in "myFoo"), also offer full
+"				keyword / CamelCaseWord matches, not just inner
+"				fragments, as the default completion /
+"				CamelCaseComplete would not use that base, yet
+"				it is helpful when completing "myFooBar" from
+"				"FooBar".
 "   1.00.003	18-Dec-2013	Also offer following fragments, not just
 "				keywords after non-keywords, when repeating
 "				after a CamelCase completion.
@@ -56,11 +68,22 @@ function! InnerFragmentComplete#InnerFragmentComplete( findstart, base )
 	" Locate the start of the keyword characters (stopping when there's an
 	" underscore or a transition from uppercase to lowercase).
 	let l:startCol = searchpos('\l\zs\u\+\%(\u\@!_\@!\k\)*\%#', 'bn', line('.'))[1] " Try to find lowercase-uppercase transition first.
-	if l:startCol == 0
+	if l:startCol > 0
+	    " Allow full matches, too, in order to complete "myFB" to "myFooBar"
+	    " from "FooBar".
+	    let s:isBaseInInnerFragment = 1
+	else
+	    let s:isBaseInInnerFragment = 0
+
 	    let l:startCol = searchpos('\%(_\@!\k\)\+\%#', 'bn', line('.'))[1]  " Then try non-underscore keyword characters.
 	    if l:startCol == 0
 		return "\<C-\>\<C-o>\<Esc>" | " Beep.
 	    endif
+
+	    " Unless there's an underscore before the base, only match real
+	    " inner fragments; for a completion of "FB" to "FooBar", the
+	    " CamelCaseComplete completion should be used.
+	    let s:isBaseInInnerFragment = (search('_\%(_\@!\k\)\+\%#', 'bn', line('.')) != 0)
 	endif
 	return l:startCol - 1 " Return byte index, not column.
     else
@@ -77,26 +100,41 @@ function! InnerFragmentComplete#InnerFragmentComplete( findstart, base )
 
 	let [l:firstLetter, l:rest] = matchlist(a:base, '^\(\a\)\?\(.*\)')[1:2]
 	if empty(l:firstLetter)
-	    let l:baseExpr = [printf('\V\k\zs\%%(%s\k\+\)', escape(l:rest, '\'))]
+	    let l:startRestriction = (s:isBaseInInnerFragment ? '' : '\k\zs')
+	    let l:baseExpr = [printf('\V%s\%%(%s\k\+\)', l:startRestriction, escape(l:rest, '\'))]
 	    if ! empty(l:camelCaseExpr)
-		call add(l:baseExpr, printf('\V\k\zs\%%(%s\)', l:camelCaseExpr))
+		call add(l:baseExpr, printf('\V%s\%%(%s\)', l:startRestriction, l:camelCaseExpr))
 	    endif
 	else
 	    " Make the search insensitive to the case of the first character,
 	    " and choose different look-behind assertions for the preceding
 	    " fragment.
 	    " Note: Special case to match e.g. "Header" inside "HTTPHeader".
-	    let l:baseExpr = [printf('\V\%%(\%%(\%%(\k\&\U%s\)\)\zs%s\|\%%(\k\&\A\)\zs%s\)%s\k\+',
+	    let l:baseExpr = [printf('\V\%%(\%%(\%%(\k\&\U%s\)\)\zs%s\|\%%(\k\&\A\)\zs%s%s\)%s\k\+',
 	    \   (l:rest =~# '^\l' ? '\|\u' : ''),
 	    \   toupper(l:firstLetter),
 	    \   tolower(l:firstLetter),
+	    \   (s:isBaseInInnerFragment ? '\|\<' . l:firstLetter : ''),
 	    \   escape(l:rest, '\')
 	    \)]
 	    if ! empty(l:camelCaseExpr)
-		call add(l:baseExpr, printf('\V%s\zs_\@!%s',
-		\   (l:firstLetter =~# '\u' ? '\k' : '\%(\k\&\A\)'),
-		\   l:camelCaseExpr
-		\))
+		if s:isBaseInInnerFragment
+		    " Also match at the start of a CamelCaseWord.
+		    call add(l:baseExpr, printf('\V%s_\@!%s',
+		    \   (l:firstLetter =~# '\u' ? '' : '\%(\%(\k\&\A\)\zs\|\<\)'),
+		    \   l:camelCaseExpr
+		    \))
+		else
+		    " Match inner fragments of a CamelCaseWord, and from the
+		    " start of a CamelCaseWord, as long as there are additional
+		    " (unmatched) fragments after the match.
+		    call add(l:baseExpr, printf('\V%s_\@!%s\|%s_\@!%s\ze\%(\U\@<=\u\k\*\|\d\k\*\|_\k\*\)\>',
+		    \   (l:firstLetter =~# '\u' ? '\k' : '\%(\k\&\A\)') . '\zs',
+		    \   l:camelCaseExpr,
+		    \   (l:firstLetter =~# '\u' ? '' : '\%(\%(\k\&\A\)\zs\|\<\)'),
+		    \   l:camelCaseExpr
+		    \))
+		endif
 	    endif
 
 	    " Convert the matches to the case of the first character.

@@ -37,6 +37,15 @@ CTRL-X i                Find matches for inner fragments. It first searches
                         first keyword character is lowercase, the inner
                         CamelCase matches will be converted to start
                         lowercase, too.
+                        If there is a fragment before the completion base
+                        (e.g. "My" in "MyCust", or "end_" in "end_foo") the
+                        completion not only offers matching inner fragments,
+                        but also the complete word match, in order to complete
+                        prefixed new words with existing full words.
+                        For CamelCaseWord fragments, matches at the start of a
+                        CamelCaseWord are also valid, as long as it's not the
+                        entire CamelCaseWord that is matched (e.g. "CC"
+                        matches "CamelCase" in "CamelCaseWord").
 
                         If that doesn't find any matches, a fallback search
                         will pick up base matches anywhere inside a word (e.g.
@@ -46,3 +55,6 @@ EXAMPLE
 The text contains "CamelCaseWords". To write "PascalCaseWords", start either
 with "PascalCaseW" (unique text match), "PascalC" (several text matches), or
 "PascalCW" (unique fragment match).
+
+The text contains "ConfigurationItem". To write "SystemConfigurationItem",
+start with "SystemCo" (full text match) or "SystemCI" (full fragment match).
